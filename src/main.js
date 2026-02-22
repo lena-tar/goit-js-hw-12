@@ -24,6 +24,7 @@ loadmoreBtn.addEventListener('click', async event => {
   try {
     hideLoadMoreButton();
     showLoader();
+    page++;
     const data = await getImagesByQuery(query, page);
     const hits = data.hits;
     if (!hits || hits.length === 0) {
@@ -51,8 +52,8 @@ loadmoreBtn.addEventListener('click', async event => {
       return;
     }
     showLoadMoreButton();
-    page++;
   } catch (error) {
+    page--;
     showError('Something went wrong. Please try again later.');
     if (page * 15 < totalHits) {
       showLoadMoreButton();
@@ -100,8 +101,6 @@ async function onSubmit(event) {
       });
       return;
     }
-
-    page++;
   } catch (error) {
     showError('Something went wrong. Please try again later.');
   } finally {
