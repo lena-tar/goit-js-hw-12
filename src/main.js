@@ -3,6 +3,8 @@ import 'izitoast/dist/css/iziToast.min.css';
 
 import errorIcon from './img/error.svg';
 
+import './css/styles.css';
+
 import { getImagesByQuery } from './js/pixabay-api.js';
 import {
   createGallery,
