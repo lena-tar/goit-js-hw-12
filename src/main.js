@@ -9,45 +9,91 @@ import {
   clearGallery,
   showLoader,
   hideLoader,
+  showLoadMoreButton,
+  hideLoadMoreButton,
 } from './js/render-functions.js';
 
 const form = document.querySelector('.form');
 
+const loadmoreBtn = document.querySelector('.loadmore-btn');
+let page = 1;
+let query = '';
+let totalHits = 0;
+
+loadmoreBtn.addEventListener('click', async event => {
+  try {
+    showLoader();
+    const data = await getImagesByQuery(query, page);
+    createGallery(data.hits);
+    const itemGallery = document.querySelector('.gallery-item');
+    if (itemGallery) {
+      const rect = itemGallery.getBoundingClientRect();
+      const height = rect.height;
+
+      window.scrollBy({ top: height * 2, behavior: 'smooth' });
+    }
+    const shown = page * 15;
+    if (shown >= totalHits) {
+      hideLoadMoreButton();
+
+      iziToast.info({
+        message: "We're sorry, but you've reached the end of search results.",
+        position: 'topRight',
+      });
+    }
+
+    page++;
+  } catch (error) {
+    showError('Something went wrong. Please try again later.');
+  } finally {
+    hideLoader();
+  }
+});
+
 form.addEventListener('submit', onSubmit);
 
-function onSubmit(event) {
+async function onSubmit(event) {
   event.preventDefault();
 
-  const query = event.currentTarget.elements['search-text'].value.trim();
+  query = event.currentTarget.elements['search-text'].value.trim();
 
   if (!query) {
     showError('Please enter a search query.');
     return;
   }
 
+  page = 1;
+
   clearGallery();
+  hideLoadMoreButton();
   showLoader();
 
-  getImagesByQuery(query)
-    .then(data => {
-      const images = data.hits;
+  try {
+    const data = await getImagesByQuery(query, page);
+    totalHits = data.totalHits;
+    let images = data.hits;
+    if (images.length === 0) {
+      showError(
+        'Sorry, there are no images matching your search query. Please try again!'
+      );
+      return;
+    }
+    createGallery(images);
+    if (totalHits > images.length) {
+      showLoadMoreButton();
+    } else {
+      iziToast.info({
+        message: "We're sorry, but you've reached the end of search results.",
+        position: 'topRight',
+      });
+    }
 
-      if (!images || images.length === 0) {
-        showError(
-          'Sorry, there are no images matching your search query. Please try again!'
-        );
-        return;
-      }
-
-      createGallery(images);
-    })
-    .catch(() => {
-      showError('Something went wrong. Please try again later.');
-    })
-    .finally(() => {
-      hideLoader();
-      form.reset();
-    });
+    page++;
+  } catch (error) {
+    showError('Something went wrong. Please try again later.');
+  } finally {
+    hideLoader();
+  }
 }
 
 function showError(message) {
